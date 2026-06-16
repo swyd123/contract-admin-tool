@@ -5,58 +5,82 @@ from utils.award_rates import get_award_rate
 
 supabase = get_supabase()
 
-from utils.award_rates import get_award_rate
+st.title("Employee Details")
 
-award = st.selectbox(
-    "Award",
-    [
-        "Children’s Services Award MA000120",
-        "Educational Services Teachers Award",
-        "Clerks Private Sector Award",
-        "Manual review required"
-    ]
-)
+with st.form("employee_form"):
+    first_name = st.text_input("First name")
+    last_name = st.text_input("Last name")
+    email = st.text_input("Email")
+    role_title = st.text_input("Role title")
 
-classification = st.selectbox(
-    "Classification",
-    [
-        "Level 1",
-        "Level 2.1",
-        "Level 2.2",
-        "Level 3.1",
-        "Level 3.2",
-        "Level 3.3",
-        "Level 3.4",
-        "Level 4A.1",
-        "Level 4A.2",
-        "Level 4B.1",
-        "Level 4B.2",
-        "Level 5.1",
-        "Level 5.2",
-        "Level 5.3",
-        "Level 6.1",
-        "Level 6.2",
-        "Director Level 1",
-        "Director Level 2",
-        "Director Level 3"
-    ]
-)
+    award = st.selectbox(
+        "Award",
+        [
+            "Children’s Services Award MA000120",
+            "Educational Services Teachers Award",
+            "Clerks Private Sector Award",
+            "Manual review required"
+        ]
+    )
 
-employment_type = st.selectbox(
-    "Employment type",
-    ["full-time", "part-time", "casual"]
-)
+    classification = st.selectbox(
+        "Classification",
+        [
+            "Level 1 - Introductory Educator",
+            "Level 2 - Educator",
+            "Level 3 - Qualified Educator",
+            "Level 4 - Experienced Educator",
+            "Level 5 - Advanced Educator",
+            "Level 6 - Room Leader",
+            "Level 7 - Assistant Director",
+            "Level 8 - Director"
+        ]
+    )
 
-rate_record = get_award_rate(
-    supabase,
-    award,
-    classification,
-    employment_type
-)
+    employment_type = st.selectbox(
+        "Employment type",
+        ["full-time", "part-time", "casual"]
+    )
 
-if rate_record:
-    hourly_rate = rate_record["minimum_hourly_rate"]
-    st.success(f"Generated hourly rate: ${hourly_rate:.2f}")
-else:
-    hourly_rate = None
-    st.error("No rate found for this award/classification/employment type. Manual review required.")
+    ordinary_hours = st.number_input(
+        "Ordinary hours per week",
+        min_value=0.0,
+        step=0.5
+    )
+
+    start_date = st.date_input("Start date")
+
+    rate_record = get_award_rate(
+        supabase,
+        award,
+        classification,
+        employment_type
+    )
+
+    if rate_record:
+        hourly_rate = rate_record["minimum_hourly_rate"]
+        st.success(f"Generated hourly rate: ${hourly_rate:.2f}")
+    else:
+        hourly_rate = None
+        st.error("No rate found for this award/classification/employment type. Manual review required.")
+
+    submitted = st.form_submit_button("Save employee")
+
+if submitted:
+    if hourly_rate is None:
+        st.error("Cannot save employee because no award rate was found.")
+    else:
+        supabase.table("employees").insert({
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "role_title": role_title,
+            "employment_type": employment_type,
+            "award": award,
+            "classification": classification,
+            "hourly_rate": hourly_rate,
+            "ordinary_hours": ordinary_hours,
+            "start_date": str(start_date)
+        }).execute()
+
+        st.success("Employee saved with generated award rate.")
