@@ -1,3 +1,10 @@
+import streamlit as st
+
+from utils.supabase_client import get_supabase
+from utils.award_rates import get_award_rate
+
+supabase = get_supabase()
+
 from utils.award_rates import get_award_rate
 
 award = st.selectbox(
